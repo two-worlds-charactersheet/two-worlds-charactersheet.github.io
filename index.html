@@ -163,6 +163,25 @@ body{background:#2a1f14;font-family:'Crimson Pro',Georgia,serif;color:var(--ink)
 .footer-text{font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.15em;color:rgba(245,230,160,0.35);}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 input[type=number]{-moz-appearance:textfield;}
+
+/* data toolbar */
+.data-toolbar{position:relative;display:flex;align-items:center;}
+.data-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(245,230,160,0.25);border-radius:3px;color:rgba(245,230,160,0.7);font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.12em;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;position:relative;top:-2px;right:10px;}
+.data-btn:hover{background:rgba(255,255,255,0.14);border-color:rgba(245,230,160,0.5);color:var(--gold-light);}
+.data-btn svg{opacity:0.7;}
+.data-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--ink);border:1px solid rgba(245,230,160,0.2);border-radius:3px;min-width:160px;box-shadow:0 6px 20px rgba(0,0,0,0.5);z-index:100;display:none;overflow:hidden;}
+.data-dropdown.open{display:block;}
+.data-dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.12em;color:rgba(245,230,160,0.65);cursor:pointer;border-bottom:1px solid rgba(245,230,160,0.08);transition:background 0.1s;}
+.data-dropdown-item:last-child{border-bottom:none;}
+.data-dropdown-item:hover{background:rgba(255,255,255,0.08);color:var(--gold-light);}
+.save-indicator{font-family:'Cinzel',serif;font-size:8px;letter-spacing:0.1em;color:rgba(245,230,160,0.3);margin-right:8px;transition:opacity 0.5s;}
+
+@media print {
+  body{background:white;padding:0;}
+  .sheet{box-shadow:none;border-radius:0;max-width:100%;}
+  .sheet-header .data-toolbar,.sheet-header .save-indicator{display:none!important;}
+  .sheet::before{display:none;}
+}
 </style>
 </head>
 <body>
@@ -170,7 +189,31 @@ input[type=number]{-moz-appearance:textfield;}
 
   <div class="sheet-header">
     <div>
-      <div class="header-title">TERRA GEMINUS</div>
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <div class="header-title">TERRA GEMINUS</div>
+        <span class="save-indicator" id="save-indicator"></span>
+        <div class="data-toolbar" id="data-toolbar">
+        <button class="data-btn" onclick="toggleDropdown(event)" title="Import / Export">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v9M4 6l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          DATA
+        </button>
+        <div class="data-dropdown" id="data-dropdown">
+          <div class="data-dropdown-item" onclick="exportJSON()">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 8h8M9 5l3 3-3 3"/></svg>
+            Export JSON
+          </div>
+          <div class="data-dropdown-item" onclick="triggerImport()">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 8H4M7 5L4 8l3 3"/></svg>
+            Import JSON
+          </div>
+          <div class="data-dropdown-item" onclick="exportPDF()">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="1" width="9" height="13" rx="1"/><path d="M11 1l3 3v10a1 1 0 01-1 1h-2M5 6h5M5 9h5M5 12h3"/></svg>
+            Export PDF
+          </div>
+        </div>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+      </div>
       <div class="header-sub">Hunter Character Record</div>
     </div>
     <div class="tier-badge">
@@ -919,6 +962,256 @@ function toggleDeath(el,type){el.classList.toggle(type);}
 function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
 
 buildStats();buildSaves();buildSkillsList();buildEquipment();buildSpheres();
+
+// ── Data persistence ──────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'terra-geminus-sheet';
+
+function gatherData() {
+  const data = { currentTier };
+
+  data.identity = Array.from(document.querySelectorAll('.identity-row .field-input')).map(el => el.value);
+  data.stats = {};
+  ['str','dex','con','int','wis','cha'].forEach(id => {
+    const el = document.getElementById('score-' + id);
+    if (el) data.stats[id] = el.value;
+  });
+  data.combat = Array.from(document.querySelectorAll('.combat-row .combat-val')).map(el => el.value);
+  data.hp = Array.from(document.querySelectorAll('.hp-block .hp-val')).map(el => el.value);
+  data.deathDots = Array.from(document.querySelectorAll('.death-saves-row .death-dot')).map(el => ({
+    success: el.classList.contains('success'), fail: el.classList.contains('fail')
+  }));
+  data.saveDots = Array.from(document.querySelectorAll('#saves-block .prof-dot')).map(el => el.classList.contains('filled'));
+  data.skillDots = Array.from(document.querySelectorAll('#skills-block .prof-dot')).map(el => el.classList.contains('filled'));
+  data.appearance = Array.from(document.querySelectorAll('.appearance-block .appearance-input')).map(el => el.value);
+  data.equipItems = Array.from(document.querySelectorAll('#equip-block .equip-input')).map(el => el.value);
+  data.equipQtys = Array.from(document.querySelectorAll('#equip-block .equip-qty')).map(el => el.value);
+  data.currency = Array.from(document.querySelectorAll('.currency-input')).map(el => el.value);
+
+  data.spheres = [0,1,2].map(i => {
+    const card = document.querySelectorAll('.sphere-card')[i];
+    if (!card) return {};
+    return {
+      name: card.querySelector('.sphere-name-input')?.value || '',
+      tier: document.getElementById('sphere-tier-' + i)?.value || '',
+      perks: Array.from(card.querySelectorAll('.perk-desc')).map(el => el.value),
+      rankDots: Array.from(card.querySelectorAll('.rank-dot')).map(el => el.classList.contains('filled')),
+      discInput: card.querySelector('.disc-input')?.value || '',
+      discSelects: Array.from(card.querySelectorAll('.disc-perk-select')).map(el => el.value),
+    };
+  });
+
+  data.soul = {
+    name: document.querySelector('.soul-name-input')?.value || '',
+    tier: document.querySelector('.soul-body .field-input')?.value || '',
+    spirituals: Array.from(document.querySelectorAll('.soul-passive-input')).map(el => el.value),
+  };
+
+  data.notes = Array.from(document.querySelectorAll('.notes-textarea')).map(el => el.value);
+  const millie = document.querySelector('.sheet-footer input[type=number]');
+  data.millieVisits = millie ? millie.value : '0';
+
+  return data;
+}
+
+function applyData(data) {
+  if (!data) return;
+
+  if (data.currentTier !== undefined) {
+    currentTier = data.currentTier;
+    const b = document.getElementById('gem-badge');
+    b.className = 'tier-gem ' + TIER_CLASS[currentTier];
+    b.textContent = TIER_ABBR[currentTier];
+    document.getElementById('tier-label').textContent = TIERS[currentTier];
+  }
+
+  if (data.identity) {
+    const els = document.querySelectorAll('.identity-row .field-input');
+    data.identity.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+
+  if (data.stats) {
+    ['str','dex','con','int','wis','cha'].forEach(id => {
+      const el = document.getElementById('score-' + id);
+      if (el && data.stats[id] !== undefined) { el.value = data.stats[id]; updateMod(id); }
+    });
+  }
+
+  if (data.combat) {
+    const els = document.querySelectorAll('.combat-row .combat-val');
+    data.combat.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+
+  if (data.hp) {
+    const els = document.querySelectorAll('.hp-block .hp-val');
+    data.hp.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+
+  if (data.deathDots) {
+    const els = document.querySelectorAll('.death-saves-row .death-dot');
+    data.deathDots.forEach((s, i) => {
+      if (!els[i]) return;
+      els[i].classList.toggle('success', !!s.success);
+      els[i].classList.toggle('fail', !!s.fail);
+    });
+  }
+
+  if (data.saveDots) {
+    const els = document.querySelectorAll('#saves-block .prof-dot');
+    data.saveDots.forEach((v, i) => { if (els[i]) els[i].classList.toggle('filled', !!v); });
+    rebuildCalcs();
+  }
+
+  if (data.skillDots) {
+    const els = document.querySelectorAll('#skills-block .prof-dot');
+    data.skillDots.forEach((v, i) => { if (els[i]) els[i].classList.toggle('filled', !!v); });
+    rebuildCalcs();
+  }
+
+  if (data.appearance) {
+    const els = document.querySelectorAll('.appearance-block .appearance-input');
+    data.appearance.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+
+  if (data.equipItems) {
+    const els = document.querySelectorAll('#equip-block .equip-input');
+    data.equipItems.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+  if (data.equipQtys) {
+    const els = document.querySelectorAll('#equip-block .equip-qty');
+    data.equipQtys.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+
+  if (data.currency) {
+    const els = document.querySelectorAll('.currency-input');
+    data.currency.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+
+  if (data.spheres) {
+    data.spheres.forEach((s, i) => {
+      const card = document.querySelectorAll('.sphere-card')[i];
+      if (!card || !s) return;
+      const nameEl = card.querySelector('.sphere-name-input');
+      if (nameEl) nameEl.value = s.name || '';
+      const tierEl = document.getElementById('sphere-tier-' + i);
+      if (tierEl) { tierEl.value = s.tier || ''; updateSphereGem(i); }
+      const perks = card.querySelectorAll('.perk-desc');
+      (s.perks || []).forEach((v, j) => { if (perks[j]) { perks[j].value = v; autoResize(perks[j]); } });
+      const rankDots = card.querySelectorAll('.rank-dot');
+      (s.rankDots || []).forEach((v, j) => { if (rankDots[j]) rankDots[j].classList.toggle('filled', !!v); });
+      const discInput = card.querySelector('.disc-input');
+      if (discInput) discInput.value = s.discInput || '';
+      const discSelects = card.querySelectorAll('.disc-perk-select');
+      (s.discSelects || []).forEach((v, j) => { if (discSelects[j]) discSelects[j].value = v; });
+    });
+  }
+
+  if (data.soul) {
+    const nameEl = document.querySelector('.soul-name-input');
+    if (nameEl) nameEl.value = data.soul.name || '';
+    const tierEl = document.querySelector('.soul-body .field-input');
+    if (tierEl) tierEl.value = data.soul.tier || '';
+    const spirituals = document.querySelectorAll('.soul-passive-input');
+    (data.soul.spirituals || []).forEach((v, i) => { if (spirituals[i]) spirituals[i].value = v; });
+  }
+
+  if (data.notes) {
+    const els = document.querySelectorAll('.notes-textarea');
+    data.notes.forEach((v, i) => { if (els[i]) els[i].value = v; });
+  }
+
+  if (data.millieVisits !== undefined) {
+    const millie = document.querySelector('.sheet-footer input[type=number]');
+    if (millie) millie.value = data.millieVisits;
+  }
+}
+
+// ── localStorage auto-save ────────────────────────────────────────────────────
+
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(gatherData()));
+    const ind = document.getElementById('save-indicator');
+    if (ind) { ind.textContent = 'SAVED'; setTimeout(() => { ind.textContent = ''; }, 1800); }
+  }, 600);
+}
+
+function attachAutoSave() {
+  document.querySelector('.sheet').addEventListener('input', scheduleSave);
+  document.querySelector('.sheet').addEventListener('change', scheduleSave);
+  document.querySelector('.sheet').addEventListener('click', e => {
+    if (e.target.classList.contains('prof-dot') ||
+        e.target.classList.contains('rank-dot') ||
+        e.target.classList.contains('death-dot')) scheduleSave();
+  });
+}
+
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) applyData(JSON.parse(raw));
+  } catch(e) { console.warn('Failed to load saved data', e); }
+}
+
+// ── Import / Export ───────────────────────────────────────────────────────────
+
+function exportJSON() {
+  closeDropdown();
+  const data = gatherData();
+  const name = (data.identity && data.identity[0]) ? data.identity[0].replace(/\s+/g, '-') : 'hunter';
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `terra-geminus-${name}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function triggerImport() {
+  closeDropdown();
+  document.getElementById('import-file').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      applyData(JSON.parse(ev.target.result));
+      localStorage.setItem(STORAGE_KEY, ev.target.result);
+      const ind = document.getElementById('save-indicator');
+      if (ind) { ind.textContent = 'IMPORTED'; setTimeout(() => { ind.textContent = ''; }, 2000); }
+    } catch(err) { alert('Invalid JSON file.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function exportPDF() {
+  closeDropdown();
+  window.print();
+}
+
+// ── Dropdown toggle ───────────────────────────────────────────────────────────
+
+function toggleDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('data-dropdown').classList.toggle('open');
+}
+
+function closeDropdown() {
+  document.getElementById('data-dropdown').classList.remove('open');
+}
+
+document.addEventListener('click', closeDropdown);
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+loadSaved();
+attachAutoSave();
 </script>
 
 

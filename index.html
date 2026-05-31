@@ -194,6 +194,76 @@ input[type=number]{-moz-appearance:textfield;}
 .save-indicator{font-family:'Cinzel',serif;font-size:8px;letter-spacing:0.1em;color:rgba(245,230,160,0.3);margin-right:8px;transition:opacity 0.5s;}
 
 @page{margin:0.4in;}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  body { padding: 0; }
+  .sheet { border-radius: 0; }
+  .body { padding: 12px 14px; }
+
+  /* Header */
+  .sheet-header { padding: 10px 14px 8px; gap: 10px; }
+  .header-title { font-size: 15px; letter-spacing: 0.08em; }
+  .data-btn { font-size: 8px; padding: 4px 8px; }
+  .tier-gem { width: 30px; height: 30px; font-size: 8px; }
+  .tier-label { font-size: 9px; }
+
+  /* Prevent iOS zoom — inputs need font-size ≥ 16px */
+  input, textarea, select { font-size: 16px !important; }
+  .stat-score { font-size: 20px !important; }
+  .stat-mod { font-size: 9px !important; }
+  .combat-val { font-size: 17px !important; }
+  .hp-val { font-size: 15px !important; }
+  .currency-input { font-size: 13px !important; }
+  .skill-val { font-size: 11px !important; }
+  .perk-desc { font-size: 14px !important; }
+
+  /* Identity — 2 columns */
+  .identity-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Stats — 3×2 */
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+
+  /* Combat — 3+2 */
+  .combat-row { grid-template-columns: repeat(3, 1fr); }
+
+  /* Two-column main layout → stack */
+  .main-cols { grid-template-columns: 1fr; }
+  .main-cols > div { display: block; }
+  .main-cols > div #equip-block { flex: none; justify-content: flex-start; }
+
+  /* Currency — 3×2 */
+  .currency-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* Notes — 2×2 */
+  .notes-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Sphere header */
+  .sphere-header { flex-wrap: wrap; gap: 4px; }
+  .sphere-pillar-tag { margin-left: 0; width: 100%; }
+
+  /* Perk rows */
+  .perk-type-tag { width: 58px; font-size: 6px; }
+
+  /* Disc row */
+  .disc-row { flex-wrap: wrap; gap: 4px; }
+
+  /* Soul */
+  .soul-header { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .soul-status { font-size: 7px; }
+
+  /* Death saves */
+  .death-saves-row { gap: 5px; }
+
+  /* Footer */
+  .sheet-footer { flex-direction: column; gap: 4px; align-items: flex-start; padding: 8px 16px; }
+
+  /* Section dividers */
+  .section-title { font-size: 8px; }
+
+  /* Dropdowns */
+  .data-dropdown { right: auto; left: 0; min-width: 150px; }
+}
 @media print {
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   body{padding:0;margin:0;}

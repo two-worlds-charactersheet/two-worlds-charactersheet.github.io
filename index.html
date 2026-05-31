@@ -1326,7 +1326,31 @@ function closeRestoreModal() {
 function restoreDefaults() {
   localStorage.removeItem(STORAGE_KEY);
   closeRestoreModal();
-  location.reload();
+
+  // Rebuild all dynamic sections fresh
+  buildStats(); buildSaves(); buildSkillsList(); buildEquipment(); buildSpheres();
+
+  // Reset static inputs to blank / original defaults
+  document.querySelectorAll('.identity-row .field-input').forEach(el => el.value = '');
+  document.querySelectorAll('.combat-row .combat-val').forEach((el, i) => {
+    el.value = ['10','+0','30','+2','10'][i] ?? '';
+  });
+  document.querySelectorAll('.hp-block .hp-val').forEach(el => el.value = '');
+  document.querySelectorAll('.death-saves-row .death-dot').forEach(el => {
+    el.classList.remove('success','fail');
+  });
+  document.querySelectorAll('.appearance-block .appearance-input').forEach(el => el.value = '');
+  document.querySelectorAll('.currency-input').forEach(el => el.value = '');
+  document.querySelector('.soul-name-input').value = '';
+  document.querySelector('.soul-body .field-input').value = '';
+  document.querySelectorAll('.soul-passive-input').forEach(el => el.value = '');
+  document.querySelectorAll('.notes-textarea').forEach(el => el.value = '');
+  const millie = document.querySelector('.sheet-footer input[type=number]');
+  if (millie) millie.value = '0';
+
+  // Reset tier to Diamond and recalc
+  applyTier(0);
+  rebuildCalcs();
 }
 
 // close modal on overlay click
@@ -1337,6 +1361,7 @@ document.getElementById('restore-modal').addEventListener('click', function(e) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 loadSaved();
+applyTier(currentTier); // ensure background always matches badge (covers fresh load & post-reset)
 attachAutoSave();
 </script>
 

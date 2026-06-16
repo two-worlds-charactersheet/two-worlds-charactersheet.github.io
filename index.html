@@ -388,7 +388,6 @@ input[type=number]{-moz-appearance:textfield;}
 
   <div class="tab-nav">
     <button class="tab-btn active" data-tab="stats" onclick="switchTab('stats')">Statistics</button>
-    <button class="tab-btn" data-tab="backstory" onclick="switchTab('backstory')">Person</button>
     <button class="tab-btn" data-tab="lore" onclick="switchTab('lore')">Lore Fragments</button>
     <button class="tab-btn" data-tab="npc" onclick="switchTab('npc')">NPC Relations</button>
     <button class="tab-btn" data-tab="session" onclick="switchTab('session')">Session Notes</button>
@@ -726,6 +725,15 @@ input[type=number]{-moz-appearance:textfield;}
 
     </div>
 
+    <!-- CLOTHING & APPEARANCE -->
+    <div class="section-divider"><span class="section-title">Clothing &amp; Appearance</span></div>
+    <div class="appearance-block" style="margin-bottom:14px;">
+      <span class="appearance-label">Appearance</span>
+      <input class="appearance-input" type="text" placeholder="Build, hair, features...">
+      <span class="appearance-label" style="margin-top:7px;">Currently wearing</span>
+      <input class="appearance-input" type="text" placeholder="Clothing, visible worn items...">
+    </div>
+
     <!-- CURRENCY — full width -->
     <div class="currency-section">
       <div class="section-divider"><span class="section-title">Currency</span></div>
@@ -943,45 +951,6 @@ input[type=number]{-moz-appearance:textfield;}
 
   </div><!-- /tab-stats -->
 
-  <!-- ── BACKSTORY & PERSONALITY ──────────────────────────────── -->
-  <div class="tab-panel" id="tab-backstory">
-    <div class="section-divider"><span class="section-title">Clothing &amp; Appearance</span></div>
-    <div class="appearance-block" style="margin-bottom:14px;">
-      <span class="appearance-label">Appearance</span>
-      <input class="appearance-input" type="text" placeholder="Build, hair, features...">
-      <span class="appearance-label" style="margin-top:7px;">Currently wearing</span>
-      <input class="appearance-input" type="text" placeholder="Clothing, visible worn items...">
-    </div>
-    <div class="section-divider"><span class="section-title">Core Traits</span></div>
-    <div class="backstory-grid">
-      <div class="field-group">
-        <span class="field-label" style="margin-bottom:5px;">Personality Traits</span>
-        <textarea class="backstory-textarea" id="backstory-traits" placeholder="How does your character generally behave and interact with others?"></textarea>
-      </div>
-      <div class="field-group">
-        <span class="field-label" style="margin-bottom:5px;">Ideals</span>
-        <textarea class="backstory-textarea" id="backstory-ideals" placeholder="What principles and beliefs guide your character's decisions?"></textarea>
-      </div>
-      <div class="field-group">
-        <span class="field-label" style="margin-bottom:5px;">Bonds</span>
-        <textarea class="backstory-textarea" id="backstory-bonds" placeholder="What people, places, or things is your character connected to?"></textarea>
-      </div>
-      <div class="field-group">
-        <span class="field-label" style="margin-bottom:5px;">Flaws</span>
-        <textarea class="backstory-textarea" id="backstory-flaws" placeholder="What weaknesses, vices, or compulsions does your character struggle with?"></textarea>
-      </div>
-    </div>
-    <div class="section-divider"><span class="section-title">History</span></div>
-    <div class="backstory-full field-group">
-      <span class="field-label" style="margin-bottom:5px;">Character Backstory</span>
-      <textarea class="backstory-textarea" id="backstory-history" placeholder="Your character's life before the story began — origins, formative events, motivations..."></textarea>
-    </div>
-    <div class="section-divider"><span class="section-title">Features &amp; Traits</span></div>
-    <div class="backstory-full field-group">
-      <span class="field-label" style="margin-bottom:5px;">Special Features &amp; Racial / Background Traits</span>
-      <textarea class="backstory-textarea" id="backstory-features" placeholder="Class features, racial traits, background features, special abilities..."></textarea>
-    </div>
-  </div><!-- /tab-backstory -->
 
   <!-- ── LORE FRAGMENTS ───────────────────────────────────────── -->
   <div class="tab-panel" id="tab-lore">
@@ -1290,14 +1259,6 @@ function gatherData() {
 
   data.sessionNotes = document.getElementById('session-notes')?.value || '';
 
-  data.backstory = {
-    traits:   document.getElementById('backstory-traits')?.value || '',
-    ideals:   document.getElementById('backstory-ideals')?.value || '',
-    bonds:    document.getElementById('backstory-bonds')?.value || '',
-    flaws:    document.getElementById('backstory-flaws')?.value || '',
-    history:  document.getElementById('backstory-history')?.value || '',
-    features: document.getElementById('backstory-features')?.value || '',
-  };
 
   data.lore = document.getElementById('lore-textarea')?.value || '';
 
@@ -1436,12 +1397,6 @@ function applyData(data) {
     if (el) el.value = data.sessionNotes;
   }
 
-  if (data.backstory) {
-    ['traits','ideals','bonds','flaws','history','features'].forEach(k => {
-      const el = document.getElementById('backstory-' + k);
-      if (el) el.value = data.backstory[k] || '';
-    });
-  }
 
   if (data.lore !== undefined) {
     const el = document.getElementById('lore-textarea');
@@ -1453,7 +1408,7 @@ function applyData(data) {
     data.npcs.forEach(npc => addNPC(npc));
   }
 
-  if (data.activeTab) switchTab(data.activeTab);
+  if (data.activeTab && data.activeTab !== 'backstory') switchTab(data.activeTab);
 }
 
 // ── localStorage auto-save ────────────────────────────────────────────────────
@@ -1575,10 +1530,7 @@ function restoreDefaults() {
   // Reset new tab fields
   const sessionNotes = document.getElementById('session-notes');
   if (sessionNotes) sessionNotes.value = '';
-  ['traits','ideals','bonds','flaws','history','features'].forEach(k => {
-    const el = document.getElementById('backstory-' + k);
-    if (el) el.value = '';
-  });
+
   const lore = document.getElementById('lore-textarea');
   if (lore) lore.value = '';
   document.querySelectorAll('#attacks-block .attack-row').forEach(row => {
